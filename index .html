@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>割勘番付｜私たちはお会計で揉めたくない</title>
+<meta name="description" content="芸歴の差で割り勘の割合を決める計算サイト「割勘番付」。先輩が多めに払う夜の会計を、揉めずにサッと決められます。ピン芸人カイディンディン制作。">
+<meta name="author" content="カイディンディン">
+<meta name="keywords" content="割勘番付,割り勘,芸歴,先輩,おごり,カイディンディン,お笑い,飲み会">
+<link rel="canonical" href="https://godmomorin.github.io/warikan-banzuke/">
+<meta property="og:title" content="割勘番付｜私たちはお会計で揉めたくない">
+<meta property="og:description" content="私たちはお会計で揉めたくない。芸歴の差で割り勘の割合を決める計算サイトです。ピン芸人カイディンディン制作。">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="割勘番付">
+<meta property="og:locale" content="ja_JP">
+<!-- ↓リポジトリ名を warikan-banzuke にすればこのままでOK。違う名前ならURLを書き換えてください -->
+<meta property="og:url" content="https://godmomorin.github.io/warikan-banzuke/">
+<meta property="og:image" content="https://godmomorin.github.io/warikan-banzuke/ogp.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2712%27%20fill%3D%27%23b22f28%27%2F%3E%3Crect%20x%3D%276%27%20y%3D%276%27%20width%3D%2752%27%20height%3D%2752%27%20rx%3D%278%27%20fill%3D%27none%27%20stroke%3D%27%23c9a24b%27%20stroke-width%3D%272%27%2F%3E%3Ctext%20x%3D%2732%27%20y%3D%2746%27%20font-family%3D%27serif%27%20font-size%3D%2740%27%20font-weight%3D%27bold%27%20text-anchor%3D%27middle%27%20fill%3D%27%23f7f1e3%27%3E%26%23x756A%3B%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "割勘番付",
+  "url": "https://godmomorin.github.io/warikan-banzuke/",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Web",
+  "description": "芸歴の差で割り勘の割合を決める計算サイト。私たちはお会計で揉めたくない。",
+  "inLanguage": "ja",
+  "author": {
+    "@type": "Person",
+    "name": "カイディンディン",
+    "alternateName": "godmomorin"
+  }
+}
+</script>
+<style>
+  :root{
+    --kurenai:#b22f28;       /* 緞帳の朱 */
+    --kurenai-dark:#7d1c18;
+    --washi:#efe6d4;         /* 和紙の地 */
+    --fuda:#f7f1e3;          /* 名ビラの紙 */
+    --sumi:#241c16;          /* 墨 */
+    --sumi-soft:#5a4d40;
+    --kin:#c9a24b;           /* 金 */
+    --shuin:#d3381c;         /* 朱印 */
+    --line:#d8cbb0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--washi);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(0,0,0,.025), transparent 60%),
+      radial-gradient(circle at 80% 80%, rgba(0,0,0,.03), transparent 55%);
+    color:var(--sumi);
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+    line-height:1.7;
+    -webkit-text-size-adjust:100%;
+  }
+  .mincho{
+    font-family:"Yu Mincho",YuMincho,"Hiragino Mincho ProN","HG明朝E","MS PMincho",serif;
+  }
+
+  /* ===== 緞帳ヘッダー ===== */
+  header{
+    position:relative;
+    background:linear-gradient(180deg,var(--kurenai-dark),var(--kurenai));
+    color:var(--fuda);
+    text-align:center;
+    padding:34px 20px 30px;
+    overflow:hidden;
+  }
+  header::before{
+    content:"";
+    position:absolute; left:0; right:0; bottom:0; height:14px;
+    background:
+      repeating-linear-gradient(90deg,var(--kin) 0 10px, #9c7a2f 10px 20px);
+    box-shadow:0 -2px 6px rgba(0,0,0,.25) inset;
+  }
+  header .curtain{
+    position:absolute; top:0; left:0; right:0; height:100%;
+    background:repeating-linear-gradient(90deg,
+      rgba(0,0,0,.10) 0 2px, transparent 2px 26px);
+    pointer-events:none;
+  }
+  h1{
+    font-size:clamp(30px,9vw,52px);
+    margin:0;
+    letter-spacing:.18em;
+    text-indent:.18em;
+    font-weight:800;
+    text-shadow:0 2px 0 rgba(0,0,0,.25);
+  }
+  .sub{
+    margin:8px 0 0;
+    font-size:13px;
+    letter-spacing:.32em;
+    text-indent:.32em;
+    color:var(--kin);
+  }
+
+  main{max-width:760px;margin:0 auto;padding:22px 16px 60px;}
+
+  .panel{
+    background:var(--fuda);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:18px 16px;
+    margin-bottom:18px;
+    box-shadow:0 1px 0 #fff inset;
+  }
+  .panel h2{
+    font-size:15px; margin:0 0 14px;
+    letter-spacing:.14em;
+    color:var(--sumi-soft);
+    border-left:4px solid var(--kurenai);
+    padding-left:10px;
+  }
+
+  /* ===== 総額 ===== */
+  .total-row{display:flex;align-items:center;gap:8px;}
+  .total-row .yen{font-size:30px;font-weight:700;color:var(--kurenai);}
+  #total{
+    flex:1; min-width:0;
+    font-size:30px; font-weight:700;
+    border:none; border-bottom:2px solid var(--sumi);
+    background:transparent; color:var(--sumi);
+    padding:4px 2px; text-align:right; font-family:inherit;
+  }
+  #total:focus{outline:none;border-bottom-color:var(--kurenai);}
+  .total-row .unit{font-size:16px;color:var(--sumi-soft);}
+
+  /* ===== ルール ===== */
+  .presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .preset{
+    border:1px solid var(--kurenai);
+    color:var(--kurenai);
+    background:transparent;
+    border-radius:999px;
+    padding:7px 14px; font-size:13px;
+    cursor:pointer; font-family:inherit;
+    letter-spacing:.04em;
+  }
+  .preset.active{background:var(--kurenai);color:var(--fuda);}
+  .slider-label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--sumi-soft);}
+  .slider-label b{font-size:20px;color:var(--kurenai);font-family:inherit;}
+  input[type=range]{width:100%;accent-color:var(--kurenai);margin-top:6px;}
+  .rule-example{
+    margin-top:12px;font-size:13px;color:var(--sumi-soft);
+    background:rgba(178,47,40,.06);border-radius:5px;padding:8px 10px;
+  }
+  .rule-example b{color:var(--kurenai);}
+  .unit-label{margin-top:14px;font-size:13px;color:var(--sumi-soft);letter-spacing:.04em;}
+  .units{display:flex;gap:8px;margin-top:7px;}
+  .unit-btn{
+    flex:1;border:1px solid var(--kurenai);color:var(--kurenai);background:transparent;
+    border-radius:5px;padding:8px 0;font-size:13px;cursor:pointer;font-family:inherit;
+  }
+  .unit-btn.active{background:var(--kurenai);color:var(--fuda);}
+
+  /* ===== メンバー入力 ===== */
+  .member-card{
+    border:1px solid var(--line);border-radius:6px;
+    padding:10px;margin-bottom:10px;background:#fff;
+  }
+  .member{
+    display:flex;align-items:center;gap:8px;margin-bottom:0;
+  }
+  .fixed-row{display:flex;align-items:center;gap:7px;margin-top:9px;}
+  .fix-toggle{
+    border:1px solid var(--line);background:#f3ece0;color:var(--sumi-soft);
+    border-radius:999px;padding:6px 12px;font-size:12px;cursor:pointer;
+    font-family:inherit;white-space:nowrap;letter-spacing:.03em;
+  }
+  .fix-toggle.active{background:var(--kurenai);color:var(--fuda);border-color:var(--kurenai);}
+  .fixed-row .fixed-amt{
+    flex:1;min-width:0;font-family:inherit;font-size:15px;color:var(--sumi);
+    background:#fff;border:1px solid var(--line);border-radius:5px;
+    padding:8px 9px;text-align:right;
+  }
+  .fixed-row .fixed-amt:disabled{background:#f0ece4;color:#b3a890;}
+  .fixed-row .yen-s{font-size:13px;color:var(--sumi-soft);}
+  .member input{
+    font-family:inherit;font-size:15px;color:var(--sumi);
+    background:#fff;border:1px solid var(--line);border-radius:5px;
+    padding:8px 9px;
+  }
+  .member .name{flex:1;min-width:0;}
+  .member .years{width:64px;text-align:right;}
+  .member .years-unit{font-size:13px;color:var(--sumi-soft);white-space:nowrap;}
+  .member .del{
+    border:none;background:none;color:var(--sumi-soft);
+    font-size:20px;cursor:pointer;padding:0 4px;line-height:1;
+  }
+  .member .del:hover{color:var(--kurenai);}
+  .panel h2 .count{
+    font-size:13px;color:var(--fuda);background:var(--kurenai);
+    border-radius:999px;padding:2px 10px;letter-spacing:.04em;margin-left:6px;
+  }
+  .add{
+    width:100%;border:1px dashed var(--kurenai);color:var(--kurenai);
+    background:transparent;border-radius:5px;padding:10px;font-size:14px;
+    cursor:pointer;font-family:inherit;margin-top:4px;
+  }
+  .add-multi-row{
+    display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;
+    font-size:13px;color:var(--sumi-soft);
+  }
+  .add-multi-label{white-space:nowrap;}
+  .add-count{
+    width:60px;text-align:center;font-family:inherit;font-size:15px;color:var(--sumi);
+    background:#fff;border:1px solid var(--line);border-radius:5px;padding:7px 4px;
+  }
+  .add-multi{
+    border:1px solid var(--kurenai);color:var(--kurenai);background:transparent;
+    border-radius:5px;padding:7px 16px;font-size:14px;cursor:pointer;font-family:inherit;
+  }
+  .add-multi:active{background:rgba(178,47,40,.1);}
+
+  /* ===== 番付（結果） ===== */
+  .banzuke{
+    background:linear-gradient(180deg,#1f1812,#2c231b);
+    border-radius:6px;padding:18px 14px;
+  }
+  .banzuke h2{color:var(--kin);border-left-color:var(--kin);}
+  .fuda-row{
+    display:flex;gap:12px;overflow-x:auto;padding:6px 2px 12px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .fuda{
+    position:relative;flex:0 0 auto;
+    background:var(--fuda);
+    border:1px solid #cdbf9f;
+    border-radius:4px;
+    width:88px;min-height:210px;
+    padding:14px 8px 10px;
+    display:flex;flex-direction:column;align-items:center;
+    box-shadow:0 3px 8px rgba(0,0,0,.4);
+  }
+  .fuda .rank{
+    font-size:11px;color:var(--kurenai);letter-spacing:.1em;
+    border:1px solid var(--kurenai);border-radius:3px;
+    padding:1px 6px;margin-bottom:8px;
+  }
+  .fuda .nm{
+    writing-mode:vertical-rl;text-orientation:upright;
+    font-weight:700;letter-spacing:.04em;white-space:nowrap;
+    flex:1;display:flex;align-items:center;justify-content:center;
+    padding:4px 0;line-height:1.04;
+  }
+  .fuda .geireki{font-size:11px;color:var(--sumi-soft);margin:6px 0 2px;}
+  .fuda .amt{font-size:17px;font-weight:700;color:var(--kurenai);}
+  .fuda .share{font-size:11px;color:var(--sumi-soft);}
+  .fuda .delta{font-size:11px;margin-top:3px;}
+  .fuda .delta.plus{color:var(--kurenai);}
+  .fuda .delta.minus{color:#2f7d4a;}
+  .fuda .fixedtag{font-size:11px;margin-top:3px;color:#2f7d4a;border:1px solid #2f7d4a;border-radius:3px;padding:0 5px;}
+  .warn{
+    background:rgba(211,56,28,.16);border:1px solid var(--shuin);
+    color:#ffd9cf;border-radius:5px;padding:8px 10px;font-size:13px;margin-bottom:12px;
+  }
+  .fuda .seal{
+    position:absolute;top:-10px;right:-10px;
+    width:46px;height:46px;border-radius:50%;
+    border:3px solid var(--shuin);color:var(--shuin);
+    font-size:24px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;
+    transform:rotate(-12deg);
+    font-family:"Yu Mincho",serif;
+    background:rgba(255,255,255,.55);
+  }
+  .empty{color:var(--kin);text-align:center;padding:24px 8px;font-size:14px;opacity:.8;}
+  .scroll-hint{
+    display:none;text-align:center;color:var(--kin);opacity:.7;
+    font-size:12px;letter-spacing:.1em;margin-bottom:6px;
+  }
+  .scroll-hint.show{display:block;}
+  .share{
+    width:100%;margin-top:16px;border:1px solid var(--kin);color:var(--kin);
+    background:transparent;border-radius:6px;padding:12px;font-size:15px;
+    cursor:pointer;font-family:inherit;letter-spacing:.06em;
+  }
+  .share:active{background:rgba(201,162,75,.15);}
+  .share-done{text-align:center;color:var(--kin);font-size:13px;min-height:18px;margin-top:8px;}
+
+  /* 明細 */
+  .detail{margin-top:6px;}
+  .detail table{width:100%;border-collapse:collapse;font-size:14px;color:#e8ddc8;}
+  .detail td{padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.12);}
+  .detail td:last-child{text-align:right;font-weight:700;color:#fff;}
+  .detail .sum td{border-bottom:none;color:var(--kin);font-weight:700;padding-top:12px;}
+
+  footer{text-align:center;font-size:12px;color:var(--sumi-soft);padding:8px 16px 36px;letter-spacing:.06em;}
+  footer .mincho{font-size:13px;}
+  footer .about{
+    max-width:520px;margin:10px auto 0;font-size:12px;line-height:1.8;
+    color:var(--sumi-soft);
+  }
+  footer .about strong{color:var(--kurenai);}
+  .reset{
+    margin-top:14px;border:1px solid var(--line);background:transparent;
+    color:var(--sumi-soft);border-radius:5px;padding:8px 16px;font-size:13px;
+    cursor:pointer;font-family:inherit;
+  }
+  .reset:active{background:rgba(0,0,0,.05);}
+</style>
+</head>
+<body>
+<header>
+  <div class="curtain"></div>
+  <h1 class="mincho">割勘番付</h1>
+  <p class="sub">私たちはお会計で揉めたくない</p>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>会計の総額</h2>
+    <div class="total-row">
+      <span class="yen mincho">¥</span>
+      <input id="total" type="text" inputmode="numeric" value="12000" aria-label="総額">
+      <span class="unit">円</span>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>縦社会のきつさ</h2>
+    <div class="presets" id="presets">
+      <button class="preset" data-k="0">完全ワリカン</button>
+      <button class="preset" data-k="5">気持ちだけ先輩</button>
+      <button class="preset active" data-k="12">ふつうの縦社会</button>
+      <button class="preset" data-k="30">鬼の縦社会</button>
+    </div>
+    <div class="slider-label">
+      <span>芸歴1年差あたり、先輩の上乗せ</span>
+      <b><span id="kVal">12</span>%</b>
+    </div>
+    <input id="kSlider" type="range" min="0" max="50" step="1" value="12">
+    <div class="rule-example" id="example"></div>
+    <div class="unit-label">金額の単位</div>
+    <div class="units" id="units">
+      <button class="unit-btn" data-u="1">1円</button>
+      <button class="unit-btn" data-u="100">100円</button>
+      <button class="unit-btn active" data-u="500">500円</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>メンバーと芸歴 <span class="count" id="memberCount"></span></h2>
+    <div id="members"></div>
+    <button class="add" id="addBtn">＋ メンバーを1人追加</button>
+    <div class="add-multi-row">
+      <span class="add-multi-label">まとめて</span>
+      <input class="add-count" id="addCount" type="number" inputmode="numeric" min="1" max="30" value="3">
+      <span class="add-multi-label">人</span>
+      <button class="add-multi" id="addMultiBtn">追加</button>
+    </div>
+  </section>
+
+  <section class="banzuke">
+    <h2>本日の番付</h2>
+    <div id="warn"></div>
+    <div class="scroll-hint" id="scrollHint">← スワイプで全員 →</div>
+    <div class="fuda-row" id="fudaRow"></div>
+    <div class="detail" id="detail"></div>
+    <button class="share" id="shareBtn">結果をコピー・共有</button>
+    <div class="share-done" id="shareDone"></div>
+  </section>
+</main>
+
+<footer>
+  <p class="mincho">端数は先輩持ち。それが芸の世界の流儀。</p>
+  <p class="about">「割勘番付」は、ピン芸人 <strong>カイディンディン</strong> が作った、芸歴で割り勘を決めるネタ計算サイトです。私たちはお会計で揉めたくない。</p>
+  <button class="reset" id="resetBtn">入力をすべてリセット</button>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  var ranks = ["大将","二番手","三番手","四番手","五番手","六番手","七番手","八番手"];
+
+  var STORE_KEY = "warikan_banzuke_v1";
+
+  var state = {
+    total: 12000,
+    k: 0.12, // 芸歴1年差あたりの上乗せ率
+    unit: 500, // 金額の単位
+    members: [
+      { id: id(), name: "先輩", years: 10, fixed: null },
+      { id: id(), name: "後輩", years: 3, fixed: null }
+    ]
+  };
+
+  // 端末に保存した内容があれば復元
+  (function loadState(){
+    try{
+      var raw = localStorage.getItem(STORE_KEY);
+      if(!raw) return;
+      var s = JSON.parse(raw);
+      if(typeof s.total === "number") state.total = s.total;
+      if(typeof s.k === "number") state.k = s.k;
+      if(typeof s.unit === "number") state.unit = s.unit;
+      if(Array.isArray(s.members) && s.members.length){
+        state.members = s.members.map(function(m){
+          return {
+            id: m.id || id(),
+            name: typeof m.name === "string" ? m.name : "",
+            years: (typeof m.years === "number" && !isNaN(m.years)) ? m.years : 0,
+            fixed: (typeof m.fixed === "number" && !isNaN(m.fixed)) ? m.fixed : null
+          };
+        });
+      }
+    }catch(e){ /* プライベートモード等では保存をあきらめる */ }
+  })();
+
+  function persist(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+
+  function id(){ return Math.random().toString(36).slice(2,9); }
+  function yen(n){ return Math.round(n).toLocaleString("ja-JP"); }
+
+  function isFixed(m){ return m.fixed != null && !isNaN(m.fixed); }
+
+  // ---- 計算 ----
+  function calc(){
+    var ms = state.members;
+    var n = ms.length;
+    if(n === 0) return null;
+    var total = state.total;
+
+    var fixedMembers = ms.filter(isFixed);
+    var autoMembers  = ms.filter(function(m){ return !isFixed(m); });
+    var fixedSum = fixedMembers.reduce(function(a,m){ return a + m.fixed; }, 0);
+    var remaining = total - fixedSum;
+
+    var warnings = [];
+    if(autoMembers.length === 0){
+      if(Math.round(remaining) !== 0){
+        warnings.push("固定額の合計が総額と合っていません（差 ¥"+yen(Math.abs(remaining))+"）。");
+      }
+    } else if(remaining < 0){
+      warnings.push("固定額の合計が総額を超えています（¥"+yen(-remaining)+" オーバー）。残りは0円で計算します。");
+    }
+
+    var splitTarget = Math.max(0, remaining);
+    var byId = {};
+
+    if(autoMembers.length > 0){
+      var minY = Math.min.apply(null, autoMembers.map(function(m){ return m.years; }));
+      var maxY = Math.max.apply(null, autoMembers.map(function(m){ return m.years; }));
+      var sumW = autoMembers.reduce(function(a,m){ return a + (1 + state.k * (m.years - minY)); }, 0);
+      var target = Math.round(splitTarget);
+
+      // 完全ワリカン(上乗せ0)は1円単位で均等に。それ以外は選んだ単位で。
+      var unit = (state.k === 0) ? 1 : state.unit;
+
+      var amounts = autoMembers.map(function(){ return 0; });
+
+      if(sumW > 0 && target > 0){
+        // 最年長グループ以外は、1人あたりを単位で切り捨て（同じ芸歴なら必ず同額）
+        var nonTopSum = 0;
+        autoMembers.forEach(function(m, i){
+          if(m.years === maxY) return; // 最年長グループは後で計算
+          var per = target * (1 + state.k * (m.years - minY)) / sumW;
+          amounts[i] = Math.max(0, Math.floor(per / unit) * unit);
+          nonTopSum += amounts[i];
+        });
+        // 残り（割り切れない端数を含む）を最年長グループで等分。1円未満の端数は先頭から
+        var topIdxs = [];
+        autoMembers.forEach(function(m, i){ if(m.years === maxY) topIdxs.push(i); });
+        var remainingTop = Math.max(0, target - nonTopSum);
+        var topCount = topIdxs.length;
+        var topPer = Math.floor(remainingTop / topCount);
+        var extra = remainingTop - topPer * topCount; // 0〜topCount-1（円単位の端数）
+        topIdxs.forEach(function(idx, j){
+          amounts[idx] = topPer + (j < extra ? 1 : 0);
+        });
+
+        // 0円になった人がいたら知らせる（少額・大人数・大きい単位のとき）
+        if(amounts.some(function(a){ return a === 0; })){
+          warnings.push("金額の単位が大きく、0円になった人がいます。単位を下げると揃いやすくなります。");
+        }
+      }
+
+      var autoEqual = splitTarget / autoMembers.length;
+      autoMembers.forEach(function(m, i){
+        byId[m.id] = { amount: amounts[i], auto: true, equalRef: autoEqual };
+      });
+    }
+    fixedMembers.forEach(function(m){ byId[m.id] = { amount: Math.round(m.fixed), auto: false }; });
+
+    var out = ms.map(function(m, idx){
+      var r = byId[m.id] || { amount: 0, auto: true, equalRef: 0 };
+      var nm = (m.name && m.name.trim()) ? m.name : ("メンバー" + (idx + 1));
+      return {
+        id: m.id,
+        name: nm,
+        years: m.years,
+        amount: r.amount,
+        auto: r.auto,
+        share: total ? r.amount / total : 0,
+        delta: r.auto ? (r.amount - (r.equalRef || 0)) : 0
+      };
+    });
+    out._warnings = warnings;
+    return out;
+  }
+
+  // ---- 描画 ----
+  function render(){
+    renderMembers();
+    renderExample();
+    renderBanzuke();
+  }
+
+  function renderMembers(){
+    var box = document.getElementById("members");
+    box.innerHTML = "";
+    var countEl = document.getElementById("memberCount");
+    if(countEl) countEl.textContent = state.members.length + "人";
+    state.members.forEach(function(m){
+      var fixedOn = isFixed(m);
+      var card = document.createElement("div");
+      card.className = "member-card";
+      card.innerHTML =
+        '<div class="member">' +
+          '<input class="name" type="text" placeholder="名前" value="'+escapeHtml(m.name)+'">' +
+          '<input class="years" type="number" inputmode="numeric" min="0" value="'+m.years+'">' +
+          '<span class="years-unit">年目</span>' +
+          '<button class="del" aria-label="削除">×</button>' +
+        '</div>' +
+        '<div class="fixed-row">' +
+          '<button class="fix-toggle'+(fixedOn?' active':'')+'">金額を固定</button>' +
+          '<span class="yen-s">¥</span>' +
+          '<input class="fixed-amt" type="text" inputmode="numeric" placeholder="自動で計算" '+
+            (fixedOn ? 'value="'+m.fixed.toLocaleString("ja-JP")+'"' : 'disabled') + '>' +
+          '<span class="yen-s">円</span>' +
+        '</div>';
+
+      card.querySelector(".name").addEventListener("input", function(e){ m.name = e.target.value; renderBanzuke(); });
+      card.querySelector(".years").addEventListener("input", function(e){
+        var v = parseInt(e.target.value,10); m.years = isNaN(v)?0:Math.max(0,v); renderExample(); renderBanzuke();
+      });
+      card.querySelector(".del").addEventListener("click", function(){
+        state.members = state.members.filter(function(x){ return x.id !== m.id; });
+        render();
+      });
+      card.querySelector(".fix-toggle").addEventListener("click", function(){
+        if(isFixed(m)){
+          m.fixed = null;
+        }else{
+          // いま自動で計算されている金額を初期値に入れる（0円固定の誤操作を防ぐ）
+          var res = calc();
+          var cur = 0;
+          if(res){
+            var found = res.filter(function(x){ return x.id === m.id; })[0];
+            if(found) cur = found.amount;
+          }
+          m.fixed = cur;
+        }
+        render();
+      });
+      var fa = card.querySelector(".fixed-amt");
+      fa.addEventListener("input", function(e){
+        var v = e.target.value.replace(/[^\d]/g,"");
+        e.target.value = v ? parseInt(v,10).toLocaleString("ja-JP") : "";
+        m.fixed = v ? parseInt(v,10) : 0;
+        renderExample(); renderBanzuke();
+      });
+      box.appendChild(card);
+    });
+  }
+
+  function renderExample(){
+    var el = document.getElementById("example");
+    var ms = state.members;
+    if(ms.some(isFixed)){
+      el.innerHTML = '固定した人の金額を差し引いた<b>残り</b>を、芸歴差で配分します。';
+      return;
+    }
+    if(state.k === 0){
+      el.innerHTML = '完全ワリカンなので、1円単位でほぼ均等に分けます。';
+      return;
+    }
+    if(ms.length === 2){
+      var d = Math.abs(ms[0].years - ms[1].years);
+      if(d === 0){
+        el.innerHTML = '芸歴が同じなので <b>5:5</b> のワリカンです。';
+      }else{
+        var w = 1 + state.k * d;
+        var senShare = Math.round(w/(1+w)*100);
+        el.innerHTML = '芸歴差 <b>'+d+'年</b> なら、先輩 <b>約'+senShare+'%</b>／後輩 約'+(100-senShare)+'% の負担です（'+state.unit+'円単位に丸めます）。';
+      }
+    }else{
+      el.innerHTML = '同じ芸歴は同額。割り切れない端数は<b>芸歴が一番上の人</b>が引き取ります（'+state.unit+'円単位）。';
+    }
+  }
+
+  function renderBanzuke(){
+    var fudaRow = document.getElementById("fudaRow");
+    var detail = document.getElementById("detail");
+    var warn = document.getElementById("warn");
+    var res = calc();
+
+    warn.innerHTML = (res && res._warnings && res._warnings.length)
+      ? res._warnings.map(function(w){ return '<div class="warn">'+w+'</div>'; }).join("")
+      : "";
+
+    if(!res || res.length === 0){
+      fudaRow.innerHTML = '<div class="empty">メンバーを追加すると<br>番付が出ます</div>';
+      detail.innerHTML = "";
+      return;
+    }
+
+    // 払う額が多い順に並べる
+    var sorted = res.slice().sort(function(a,b){ return b.amount - a.amount; });
+
+    fudaRow.innerHTML = "";
+    sorted.forEach(function(r, i){
+      var card = document.createElement("div");
+      card.className = "fuda";
+      var foot;
+      if(r.auto){
+        var deltaCls = r.delta >= 0 ? "plus" : "minus";
+        var deltaTxt = (r.delta >= 0 ? "＋" : "−") + yen(Math.abs(r.delta)) + "円";
+        foot = '<div class="delta '+deltaCls+'">'+deltaTxt+'</div>';
+      }else{
+        foot = '<div class="fixedtag">固定</div>';
+      }
+      var seal = (i === 0 && sorted.length > 1 && r.amount > sorted[sorted.length-1].amount)
+        ? '<div class="seal mincho">奢</div>' : '';
+      card.innerHTML =
+        seal +
+        '<div class="rank">'+(ranks[i]||((i+1)+"番手"))+'</div>' +
+        '<div class="nm mincho" style="font-size:'+nameFont(r.name)+'px">'+escapeHtml(r.name)+'</div>' +
+        '<div class="geireki">芸歴'+r.years+'年</div>' +
+        '<div class="amt">¥'+yen(r.amount)+'</div>' +
+        '<div class="share">'+(r.share*100).toFixed(0)+'%</div>' +
+        foot;
+      fudaRow.appendChild(card);
+    });
+
+    // 明細表
+    var rows = sorted.map(function(r){
+      var tag = r.auto ? "" : "（固定）";
+      return '<tr><td>'+escapeHtml(r.name)+'（芸歴'+r.years+'年）'+tag+'</td><td>¥'+yen(r.amount)+'</td></tr>';
+    }).join("");
+    var sum = res.reduce(function(a,b){return a+b.amount;},0);
+    detail.innerHTML =
+      '<table><tbody>'+rows+
+      '<tr class="sum"><td>合計</td><td>¥'+yen(sum)+'</td></tr>'+
+      '</tbody></table>';
+
+    // 4人以上は横スクロールのヒントを出す
+    var hint = document.getElementById("scrollHint");
+    if(hint) hint.classList.toggle("show", sorted.length >= 4);
+
+    persist();
+  }
+
+  function nameFont(name){
+    var L = name ? name.length : 0;
+    if(L <= 4) return 22;
+    if(L <= 6) return 18;
+    if(L <= 8) return 15;
+    if(L <= 10) return 13;
+    return 11;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  // ---- イベント ----
+  document.getElementById("total").addEventListener("input", function(e){
+    var v = e.target.value.replace(/[^\d]/g,"");
+    e.target.value = v ? parseInt(v,10).toLocaleString("ja-JP") : "";
+    state.total = v ? parseInt(v,10) : 0;
+    renderBanzuke();
+  });
+  // 初期表示の整形
+  (function(){ var t=document.getElementById("total"); t.value = state.total.toLocaleString("ja-JP"); })();
+
+  var slider = document.getElementById("kSlider");
+  var kVal = document.getElementById("kVal");
+  slider.addEventListener("input", function(e){
+    var p = parseInt(e.target.value,10);
+    state.k = p/100; kVal.textContent = p;
+    setActivePreset(p);
+    renderExample(); renderBanzuke();
+  });
+
+  var presets = document.querySelectorAll(".preset");
+  presets.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var p = parseInt(btn.getAttribute("data-k"),10);
+      state.k = p/100; slider.value = p; kVal.textContent = p;
+      setActivePreset(p);
+      renderExample(); renderBanzuke();
+    });
+  });
+  function setActivePreset(p){
+    presets.forEach(function(b){
+      b.classList.toggle("active", parseInt(b.getAttribute("data-k"),10) === p);
+    });
+  }
+
+  document.getElementById("addBtn").addEventListener("click", function(){
+    state.members.push({ id:id(), name:"", years:0, fixed:null });
+    render();
+    var inputs = document.querySelectorAll("#members .name");
+    if(inputs.length) inputs[inputs.length-1].focus();
+  });
+
+  document.getElementById("addMultiBtn").addEventListener("click", function(){
+    var c = parseInt(document.getElementById("addCount").value, 10);
+    if(isNaN(c) || c < 1) c = 1;
+    if(c > 30) c = 30;
+    for(var i=0; i<c; i++){
+      state.members.push({ id:id(), name:"", years:0, fixed:null });
+    }
+    render();
+  });
+
+  // ---- 金額の単位 ----
+  var unitBtns = document.querySelectorAll(".unit-btn");
+  function setActiveUnit(u){
+    unitBtns.forEach(function(b){
+      b.classList.toggle("active", parseInt(b.getAttribute("data-u"),10) === u);
+    });
+  }
+  unitBtns.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      state.unit = parseInt(btn.getAttribute("data-u"),10);
+      setActiveUnit(state.unit);
+      renderExample(); renderBanzuke();
+    });
+  });
+
+  // ---- 結果のコピー・共有 ----
+  function buildShareText(){
+    var res = calc();
+    if(!res || res.length === 0) return "";
+    var sorted = res.slice().sort(function(a,b){ return b.amount - a.amount; });
+    var lines = ["🍶 割勘番付（総額 ¥"+yen(state.total)+"）", ""];
+    sorted.forEach(function(r, i){
+      var ogori = (i === 0 && sorted.length > 1 && r.amount > sorted[sorted.length-1].amount) ? "　←おごり頭" : "";
+      lines.push((i+1)+"位 "+r.name+"（芸歴"+r.years+"年） ¥"+yen(r.amount)+(r.auto ? "" : "（固定）")+ogori);
+    });
+    var sum = res.reduce(function(a,b){ return a+b.amount; }, 0);
+    lines.push("", "合計 ¥"+yen(sum));
+    return lines.join("\n");
+  }
+  var shareDone = document.getElementById("shareDone");
+  function flash(msg){
+    shareDone.textContent = msg;
+    setTimeout(function(){ shareDone.textContent = ""; }, 2000);
+  }
+  function fallbackCopy(text){
+    try{
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      flash("コピーしました");
+    }catch(e){ flash("コピーできませんでした"); }
+  }
+  document.getElementById("shareBtn").addEventListener("click", function(){
+    var text = buildShareText();
+    if(!text){ flash("メンバーを追加してください"); return; }
+    if(navigator.share){
+      navigator.share({ title: "割勘番付", text: text }).catch(function(){});
+    }else if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ flash("コピーしました"); }).catch(function(){ fallbackCopy(text); });
+    }else{
+      fallbackCopy(text);
+    }
+  });
+
+  // ---- 保存内容をUIに反映 ----
+  function syncControls(){
+    document.getElementById("total").value = state.total ? state.total.toLocaleString("ja-JP") : "";
+    var p = Math.round(state.k * 100);
+    slider.value = p; kVal.textContent = p; setActivePreset(p);
+    setActiveUnit(state.unit);
+  }
+
+  // ---- リセット ----
+  document.getElementById("resetBtn").addEventListener("click", function(){
+    if(!window.confirm("入力をすべて消して、最初の状態に戻しますか？")) return;
+    try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+    state.total = 12000;
+    state.k = 0.12;
+    state.unit = 500;
+    state.members = [
+      { id: id(), name: "先輩", years: 10, fixed: null },
+      { id: id(), name: "後輩", years: 3, fixed: null }
+    ];
+    syncControls();
+    render();
+  });
+
+  syncControls();
+  render();
+})();
+</script>
+</body>
+</html>

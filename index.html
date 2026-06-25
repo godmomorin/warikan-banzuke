@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="tl6zSfZbgY7SJdKggf4uat4GSaNCkeOe48HiajlPHsE" />
 <title>割勘番付｜私たちはお会計で揉めたくない</title>
 <meta name="description" content="芸歴の差で割り勘の割合を決める計算サイト「割勘番付」。先輩が多めに払う夜の会計を、揉めずにサッと決められます。ピン芸人カイディンディン制作。">
 <meta name="author" content="カイディンディン">
@@ -135,6 +136,13 @@
   }
   #total:focus{outline:none;border-bottom-color:var(--kurenai);}
   .total-row .unit{font-size:16px;color:var(--sumi-soft);}
+  .total-row .eg-tag{
+    font-size:13px;color:var(--fuda);background:var(--kin);
+    border-radius:999px;padding:2px 9px;white-space:nowrap;
+  }
+  .eg-note{
+    margin:8px 0 0;font-size:12px;color:var(--kurenai);line-height:1.6;
+  }
 
   /* ===== ルール ===== */
   .presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
@@ -324,8 +332,10 @@
     <div class="total-row">
       <span class="yen mincho">¥</span>
       <input id="total" type="text" inputmode="numeric" value="12000" aria-label="総額">
+      <span class="eg-tag" id="egTag">（例）</span>
       <span class="unit">円</span>
     </div>
+    <p class="eg-note" id="egNote">※ いまの数字とメンバーは例です。自分たちの金額に書き換えてください。</p>
   </section>
 
   <section class="panel">
@@ -397,11 +407,15 @@
     ]
   };
 
+  // 開いた直後の数字が「例」かどうか（保存データがあれば例ではない）
+  var isExample = true;
+
   // 端末に保存した内容があれば復元
   (function loadState(){
     try{
       var raw = localStorage.getItem(STORE_KEY);
       if(!raw) return;
+      isExample = false;
       var s = JSON.parse(raw);
       if(typeof s.total === "number") state.total = s.total;
       if(typeof s.k === "number") state.k = s.k;
@@ -544,9 +558,9 @@
           '<span class="yen-s">円</span>' +
         '</div>';
 
-      card.querySelector(".name").addEventListener("input", function(e){ m.name = e.target.value; renderBanzuke(); });
+      card.querySelector(".name").addEventListener("input", function(e){ m.name = e.target.value; clearExample(); renderBanzuke(); });
       card.querySelector(".years").addEventListener("input", function(e){
-        var v = parseInt(e.target.value,10); m.years = isNaN(v)?0:Math.max(0,v); renderExample(); renderBanzuke();
+        var v = parseInt(e.target.value,10); m.years = isNaN(v)?0:Math.max(0,v); clearExample(); renderExample(); renderBanzuke();
       });
       card.querySelector(".del").addEventListener("click", function(){
         state.members = state.members.filter(function(x){ return x.id !== m.id; });
@@ -681,10 +695,21 @@
   }
 
   // ---- イベント ----
+  function updateExampleTags(){
+    var tag = document.getElementById("egTag");
+    var note = document.getElementById("egNote");
+    if(tag) tag.style.display = isExample ? "" : "none";
+    if(note) note.style.display = isExample ? "" : "none";
+  }
+  function clearExample(){
+    if(isExample){ isExample = false; updateExampleTags(); }
+  }
+
   document.getElementById("total").addEventListener("input", function(e){
     var v = e.target.value.replace(/[^\d]/g,"");
     e.target.value = v ? parseInt(v,10).toLocaleString("ja-JP") : "";
     state.total = v ? parseInt(v,10) : 0;
+    clearExample();
     renderBanzuke();
   });
   // 初期表示の整形
@@ -716,6 +741,7 @@
 
   document.getElementById("addBtn").addEventListener("click", function(){
     state.members.push({ id:id(), name:"", years:0, fixed:null });
+    clearExample();
     render();
     var inputs = document.querySelectorAll("#members .name");
     if(inputs.length) inputs[inputs.length-1].focus();
@@ -728,6 +754,7 @@
     for(var i=0; i<c; i++){
       state.members.push({ id:id(), name:"", years:0, fixed:null });
     }
+    clearExample();
     render();
   });
 
@@ -793,6 +820,7 @@
     var p = Math.round(state.k * 100);
     slider.value = p; kVal.textContent = p; setActivePreset(p);
     setActiveUnit(state.unit);
+    updateExampleTags();
   }
 
   // ---- リセット ----
@@ -806,6 +834,7 @@
       { id: id(), name: "先輩", years: 10, fixed: null },
       { id: id(), name: "後輩", years: 3, fixed: null }
     ];
+    isExample = true;
     syncControls();
     render();
   });

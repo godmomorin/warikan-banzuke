@@ -1,0 +1,16 @@
+{
+  "name": "割勘番付",
+  "short_name": "割勘番付",
+  "description": "芸歴の差で割り勘の割合を決める計算アプリ。私たちはお会計で揉めたくない。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#b22f28",
+  "theme_color": "#b22f28",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

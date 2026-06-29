@@ -207,6 +207,8 @@
   }
   .member .name{flex:1;min-width:0;}
   .member .years{width:64px;text-align:right;}
+  .member .x-label{font-size:13px;color:var(--sumi-soft);}
+  .member .cnt{width:46px;text-align:center;}
   .member .years-unit{font-size:13px;color:var(--sumi-soft);white-space:nowrap;}
   .member .del{
     border:none;background:none;color:var(--sumi-soft);
@@ -269,12 +271,15 @@
     padding:4px 0;line-height:1.04;
   }
   .fuda .geireki{font-size:11px;color:var(--sumi-soft);margin:6px 0 2px;}
-  .fuda .amt{font-size:17px;font-weight:700;color:var(--kurenai);}
+  .fuda .amt{font-size:17px;font-weight:700;color:var(--kurenai);white-space:nowrap;max-width:100%;}
   .fuda .share{font-size:11px;color:var(--sumi-soft);}
   .fuda .delta{font-size:11px;margin-top:3px;}
   .fuda .delta.plus{color:var(--kurenai);}
   .fuda .delta.minus{color:#2f7d4a;}
   .fuda .fixedtag{font-size:11px;margin-top:3px;color:#2f7d4a;border:1px solid #2f7d4a;border-radius:3px;padding:0 5px;}
+  .fuda .perline{font-size:11px;margin-top:3px;color:var(--sumi-soft);}
+  .fuda .geireki .xn{color:var(--kurenai);font-weight:700;}
+  .detail .per-note{color:#bfae8e;font-size:12px;}
   .warn{
     background:rgba(211,56,28,.16);border:1px solid var(--shuin);
     color:#ffd9cf;border-radius:5px;padding:8px 10px;font-size:13px;margin-bottom:12px;
@@ -429,8 +434,8 @@
     k: 0.12, // 芸歴1年差あたりの上乗せ率
     unit: 500, // 金額の単位
     members: [
-      { id: id(), name: "先輩", years: 10, fixed: null },
-      { id: id(), name: "後輩", years: 3, fixed: null }
+      { id: id(), name: "先輩", years: 10, fixed: null, count: 1 },
+      { id: id(), name: "後輩", years: 3, fixed: null, count: 1 }
     ]
   };
 
@@ -453,7 +458,8 @@
             id: m.id || id(),
             name: typeof m.name === "string" ? m.name : "",
             years: (typeof m.years === "number" && !isNaN(m.years)) ? m.years : 0,
-            fixed: (typeof m.fixed === "number" && !isNaN(m.fixed)) ? m.fixed : null
+            fixed: (typeof m.fixed === "number" && !isNaN(m.fixed)) ? m.fixed : null,
+            count: (typeof m.count === "number" && m.count >= 1) ? Math.floor(m.count) : 1
           };
         });
       }
@@ -469,6 +475,11 @@
 
   function isFixed(m){ return m.fixed != null && !isNaN(m.fixed); }
 
+  function cnt(m){
+    var c = m.count;
+    return (typeof c === "number" && c >= 1) ? Math.floor(c) : 1;
+  }
+
   // ---- 計算 ----
   function calc(){
     var ms = state.members;
@@ -478,7 +489,7 @@
 
     var fixedMembers = ms.filter(isFixed);
     var autoMembers  = ms.filter(function(m){ return !isFixed(m); });
-    var fixedSum = fixedMembers.reduce(function(a,m){ return a + m.fixed; }, 0);
+    var fixedSum = fixedMembers.reduce(function(a,m){ return a + m.fixed * cnt(m); }, 0);
     var remaining = total - fixedSum;
 
     var warnings = [];
@@ -496,58 +507,66 @@
     if(autoMembers.length > 0){
       var minY = Math.min.apply(null, autoMembers.map(function(m){ return m.years; }));
       var maxY = Math.max.apply(null, autoMembers.map(function(m){ return m.years; }));
-      var sumW = autoMembers.reduce(function(a,m){ return a + (1 + state.k * (m.years - minY)); }, 0);
+      var unit = (state.k === 0) ? 1 : state.unit;
+      var sumUnits = autoMembers.reduce(function(a,m){ return a + (1 + state.k * (m.years - minY)) * cnt(m); }, 0);
       var target = Math.round(splitTarget);
 
-      // 完全ワリカン(上乗せ0)は1円単位で均等に。それ以外は選んだ単位で。
-      var unit = (state.k === 0) ? 1 : state.unit;
+      var per = {}; // id -> 1人あたり
+      var sub = {}; // id -> その行の合計
 
-      var amounts = autoMembers.map(function(){ return 0; });
-
-      if(sumW > 0 && target > 0){
-        // 最年長グループ以外は、1人あたりを単位で切り捨て（同じ芸歴なら必ず同額）
+      if(sumUnits > 0 && target > 0){
+        // 最年長グループ以外：1人あたりを単位で切り捨て（同じ芸歴なら必ず同額）
         var nonTopSum = 0;
-        autoMembers.forEach(function(m, i){
-          if(m.years === maxY) return; // 最年長グループは後で計算
-          var per = target * (1 + state.k * (m.years - minY)) / sumW;
-          amounts[i] = Math.max(0, Math.floor(per / unit) * unit);
-          nonTopSum += amounts[i];
+        autoMembers.forEach(function(m){
+          if(m.years === maxY) return;
+          var pp = Math.max(0, Math.floor( target * (1 + state.k * (m.years - minY)) / sumUnits / unit ) * unit);
+          per[m.id] = pp; sub[m.id] = pp * cnt(m); nonTopSum += sub[m.id];
         });
-        // 残り（割り切れない端数を含む）を最年長グループで等分。1円未満の端数は先頭から
-        var topIdxs = [];
-        autoMembers.forEach(function(m, i){ if(m.years === maxY) topIdxs.push(i); });
+        // 最年長グループ：残りを人数で等分。割り切れない端数は先頭の行が引き取る
+        var topMembers = autoMembers.filter(function(m){ return m.years === maxY; });
+        var topTotalCount = topMembers.reduce(function(a,m){ return a + cnt(m); }, 0);
         var remainingTop = Math.max(0, target - nonTopSum);
-        var topCount = topIdxs.length;
-        var topPer = Math.floor(remainingTop / topCount);
-        var extra = remainingTop - topPer * topCount; // 0〜topCount-1（円単位の端数）
-        topIdxs.forEach(function(idx, j){
-          amounts[idx] = topPer + (j < extra ? 1 : 0);
+        var topPer = Math.floor(remainingTop / topTotalCount);
+        var crumb = remainingTop - topPer * topTotalCount;
+        topMembers.forEach(function(m, j){
+          per[m.id] = topPer;
+          sub[m.id] = topPer * cnt(m) + (j === 0 ? crumb : 0);
         });
-
-        // 0円になった人がいたら知らせる（少額・大人数・大きい単位のとき）
-        if(amounts.some(function(a){ return a === 0; })){
-          warnings.push("金額の単位が大きく、0円になった人がいます。単位を下げると揃いやすくなります。");
-        }
+      } else {
+        autoMembers.forEach(function(m){ per[m.id] = 0; sub[m.id] = 0; });
       }
 
-      var autoEqual = splitTarget / autoMembers.length;
-      autoMembers.forEach(function(m, i){
-        byId[m.id] = { amount: amounts[i], auto: true, equalRef: autoEqual };
+      if(target > 0 && autoMembers.some(function(m){ return per[m.id] === 0; })){
+        warnings.push("金額の単位が大きく、0円になった人がいます。単位を下げると揃いやすくなります。");
+      }
+
+      autoMembers.forEach(function(m){
+        byId[m.id] = { amount: sub[m.id], perPerson: per[m.id], auto: true };
       });
     }
-    fixedMembers.forEach(function(m){ byId[m.id] = { amount: Math.round(m.fixed), auto: false }; });
+    fixedMembers.forEach(function(m){
+      var f = Math.round(m.fixed);
+      byId[m.id] = { amount: f * cnt(m), perPerson: f, auto: false };
+    });
+
+    var totalPeople = ms.reduce(function(a,m){ return a + cnt(m); }, 0);
+    var equalRef = totalPeople ? total / totalPeople : 0;
 
     var out = ms.map(function(m, idx){
-      var r = byId[m.id] || { amount: 0, auto: true, equalRef: 0 };
+      var r = byId[m.id] || { amount: 0, perPerson: 0, auto: true };
       var nm = (m.name && m.name.trim()) ? m.name : ("メンバー" + (idx + 1));
+      var c = cnt(m);
       return {
         id: m.id,
         name: nm,
         years: m.years,
-        amount: r.amount,
+        count: c,
+        amount: r.amount,                         // 行の合計
+        perPerson: r.perPerson,                   // 1人あたり
+        perExact: (r.amount === r.perPerson * c), // 1人あたり×人数 が合計と一致するか
         auto: r.auto,
         share: total ? r.amount / total : 0,
-        delta: r.auto ? (r.amount - (r.equalRef || 0)) : 0
+        delta: r.auto ? (r.perPerson - equalRef) : 0
       };
     });
     out._warnings = warnings;
@@ -561,11 +580,17 @@
     renderBanzuke();
   }
 
+  function updatePeopleBadge(){
+    var el = document.getElementById("memberCount");
+    if(!el) return;
+    var people = state.members.reduce(function(a,m){ return a + cnt(m); }, 0);
+    el.textContent = people + "人";
+  }
+
   function renderMembers(){
     var box = document.getElementById("members");
     box.innerHTML = "";
-    var countEl = document.getElementById("memberCount");
-    if(countEl) countEl.textContent = state.members.length + "人";
+    updatePeopleBadge();
     state.members.forEach(function(m){
       var fixedOn = isFixed(m);
       var card = document.createElement("div");
@@ -575,6 +600,9 @@
           '<input class="name" type="text" placeholder="名前" value="'+escapeHtml(m.name)+'">' +
           '<input class="years" type="number" inputmode="numeric" min="0" value="'+m.years+'">' +
           '<span class="years-unit">年目</span>' +
+          '<span class="x-label">×</span>' +
+          '<input class="cnt" type="number" inputmode="numeric" min="1" value="'+cnt(m)+'">' +
+          '<span class="x-label">人</span>' +
           '<button class="del" aria-label="削除">×</button>' +
         '</div>' +
         '<div class="fixed-row">' +
@@ -582,12 +610,16 @@
           '<span class="yen-s">¥</span>' +
           '<input class="fixed-amt" type="text" inputmode="numeric" placeholder="自動で計算" '+
             (fixedOn ? 'value="'+m.fixed.toLocaleString("ja-JP")+'"' : 'disabled') + '>' +
-          '<span class="yen-s">円</span>' +
+          '<span class="yen-s">円' + (fixedOn ? '／人' : '') + '</span>' +
         '</div>';
 
       card.querySelector(".name").addEventListener("input", function(e){ m.name = e.target.value; clearExample(); renderBanzuke(); });
       card.querySelector(".years").addEventListener("input", function(e){
         var v = parseInt(e.target.value,10); m.years = isNaN(v)?0:Math.max(0,v); clearExample(); renderExample(); renderBanzuke();
+      });
+      card.querySelector(".cnt").addEventListener("input", function(e){
+        var v = parseInt(e.target.value,10); m.count = isNaN(v)?1:Math.max(1,v);
+        clearExample(); updatePeopleBadge(); renderBanzuke();
       });
       card.querySelector(".del").addEventListener("click", function(){
         state.members = state.members.filter(function(x){ return x.id !== m.id; });
@@ -597,12 +629,12 @@
         if(isFixed(m)){
           m.fixed = null;
         }else{
-          // いま自動で計算されている金額を初期値に入れる（0円固定の誤操作を防ぐ）
+          // いま自動で計算されている「1人あたり」を初期値に入れる（0円固定の誤操作を防ぐ）
           var res = calc();
           var cur = 0;
           if(res){
             var found = res.filter(function(x){ return x.id === m.id; })[0];
-            if(found) cur = found.amount;
+            if(found) cur = found.perPerson;
           }
           m.fixed = cur;
         }
@@ -660,29 +692,41 @@
       return;
     }
 
-    // 払う額が多い順に並べる
-    var sorted = res.slice().sort(function(a,b){ return b.amount - a.amount; });
+    // 芸歴の高い順に上から並べる（同じ芸歴なら払う額が多い順）
+    var sorted = res.slice().sort(function(a,b){ return (b.years - a.years) || (b.amount - a.amount); });
+
+    // 「奢」マークは並び順に関係なく“一番多く払う人”へ
+    var amountsAll = res.map(function(x){ return x.amount; });
+    var maxAmt = Math.max.apply(null, amountsAll);
+    var minAmt = Math.min.apply(null, amountsAll);
+    var topPayerId = null;
+    if(res.length > 1 && maxAmt > minAmt){
+      var tp = res.filter(function(x){ return x.amount === maxAmt; })[0];
+      topPayerId = tp ? tp.id : null;
+    }
 
     fudaRow.innerHTML = "";
     sorted.forEach(function(r, i){
       var card = document.createElement("div");
       card.className = "fuda";
-      var foot;
-      if(r.auto){
+      var foot = "";
+      if(!r.auto) foot += '<div class="fixedtag">固定</div>';
+      if(r.count > 1){
+        foot += '<div class="perline">1人 '+(r.perExact ? "" : "約")+'¥'+yen(r.perPerson)+'</div>';
+      } else if(r.auto){
         var deltaCls = r.delta >= 0 ? "plus" : "minus";
         var deltaTxt = (r.delta >= 0 ? "＋" : "−") + yen(Math.abs(r.delta)) + "円";
-        foot = '<div class="delta '+deltaCls+'">'+deltaTxt+'</div>';
-      }else{
-        foot = '<div class="fixedtag">固定</div>';
+        foot += '<div class="delta '+deltaCls+'" style="font-size:'+deltaFont(deltaTxt.length)+'px">'+deltaTxt+'</div>';
       }
-      var seal = (i === 0 && sorted.length > 1 && r.amount > sorted[sorted.length-1].amount)
-        ? '<div class="seal mincho">奢</div>' : '';
+      var seal = (r.id === topPayerId) ? '<div class="seal mincho">奢</div>' : '';
+      var amtStr = "¥" + yen(r.amount);
+      var geireki = '芸歴'+r.years+'年' + (r.count > 1 ? ' <span class="xn">×'+r.count+'</span>' : '');
       card.innerHTML =
         seal +
         '<div class="rank">'+(ranks[i]||((i+1)+"番手"))+'</div>' +
         '<div class="nm mincho" style="font-size:'+nameFont(r.name)+'px">'+escapeHtml(r.name)+'</div>' +
-        '<div class="geireki">芸歴'+r.years+'年</div>' +
-        '<div class="amt">¥'+yen(r.amount)+'</div>' +
+        '<div class="geireki">'+geireki+'</div>' +
+        '<div class="amt" style="font-size:'+amtFont(amtStr.length)+'px">'+amtStr+'</div>' +
         '<div class="share">'+(r.share*100).toFixed(0)+'%</div>' +
         foot;
       fudaRow.appendChild(card);
@@ -691,7 +735,9 @@
     // 明細表
     var rows = sorted.map(function(r){
       var tag = r.auto ? "" : "（固定）";
-      return '<tr><td>'+escapeHtml(r.name)+'（芸歴'+r.years+'年）'+tag+'</td><td>¥'+yen(r.amount)+'</td></tr>';
+      var xn = r.count > 1 ? ' ×'+r.count : '';
+      var perNote = r.count > 1 ? '<span class="per-note">（1人 '+(r.perExact ? "" : "約")+'¥'+yen(r.perPerson)+'）</span>' : '';
+      return '<tr><td>'+escapeHtml(r.name)+xn+'（芸歴'+r.years+'年）'+tag+perNote+'</td><td>¥'+yen(r.amount)+'</td></tr>';
     }).join("");
     var sum = res.reduce(function(a,b){return a+b.amount;},0);
     detail.innerHTML =
@@ -713,6 +759,22 @@
     if(L <= 8) return 15;
     if(L <= 10) return 13;
     return 11;
+  }
+
+  // 金額（¥+カンマ込み）の文字数に応じて縮小し、枠からはみ出さないように
+  function amtFont(len){
+    if(len <= 7) return 17;   // 〜¥99,999
+    if(len <= 8) return 16;   // 〜¥999,999
+    if(len <= 10) return 14;  // 〜¥9,999,999
+    if(len <= 12) return 12;  // 〜¥999,999,999
+    if(len <= 14) return 10;
+    return 9;
+  }
+  function deltaFont(len){
+    if(len <= 8) return 11;
+    if(len <= 11) return 10;
+    if(len <= 14) return 9;
+    return 8;
   }
 
   function escapeHtml(s){
@@ -767,7 +829,7 @@
   }
 
   document.getElementById("addBtn").addEventListener("click", function(){
-    state.members.push({ id:id(), name:"", years:0, fixed:null });
+    state.members.push({ id:id(), name:"", years:0, fixed:null, count:1 });
     clearExample();
     render();
     var inputs = document.querySelectorAll("#members .name");
@@ -779,7 +841,7 @@
     if(isNaN(c) || c < 1) c = 1;
     if(c > 30) c = 30;
     for(var i=0; i<c; i++){
-      state.members.push({ id:id(), name:"", years:0, fixed:null });
+      state.members.push({ id:id(), name:"", years:0, fixed:null, count:1 });
     }
     clearExample();
     render();
@@ -804,11 +866,18 @@
   function buildShareText(){
     var res = calc();
     if(!res || res.length === 0) return "";
-    var sorted = res.slice().sort(function(a,b){ return b.amount - a.amount; });
+    var sorted = res.slice().sort(function(a,b){ return (b.years - a.years) || (b.amount - a.amount); });
+    var amountsAll = res.map(function(x){ return x.amount; });
+    var maxAmt = Math.max.apply(null, amountsAll);
+    var minAmt = Math.min.apply(null, amountsAll);
+    var topPayerId = (res.length > 1 && maxAmt > minAmt)
+      ? (res.filter(function(x){ return x.amount === maxAmt; })[0] || {}).id : null;
     var lines = ["🍶 割勘番付（総額 ¥"+yen(state.total)+"）", ""];
     sorted.forEach(function(r, i){
-      var ogori = (i === 0 && sorted.length > 1 && r.amount > sorted[sorted.length-1].amount) ? "　←おごり頭" : "";
-      lines.push((i+1)+"位 "+r.name+"（芸歴"+r.years+"年） ¥"+yen(r.amount)+(r.auto ? "" : "（固定）")+ogori);
+      var ogori = (r.id === topPayerId) ? "　←おごり頭" : "";
+      var xn = r.count > 1 ? ("×"+r.count) : "";
+      var perNote = r.count > 1 ? ("（1人 "+(r.perExact ? "" : "約")+"¥"+yen(r.perPerson)+"）") : "";
+      lines.push((i+1)+"位 "+r.name+xn+"（芸歴"+r.years+"年） ¥"+yen(r.amount)+(r.auto ? "" : "（固定）")+perNote+ogori);
     });
     var sum = res.reduce(function(a,b){ return a+b.amount; }, 0);
     lines.push("", "合計 ¥"+yen(sum));
@@ -858,8 +927,8 @@
     state.k = 0.12;
     state.unit = 500;
     state.members = [
-      { id: id(), name: "先輩", years: 10, fixed: null },
-      { id: id(), name: "後輩", years: 3, fixed: null }
+      { id: id(), name: "先輩", years: 10, fixed: null, count: 1 },
+      { id: id(), name: "後輩", years: 3, fixed: null, count: 1 }
     ];
     isExample = true;
     syncControls();
